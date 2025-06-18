@@ -30,7 +30,7 @@ En omfattende app til undervisere, hvor man kan tildele opgaver til elever, føl
 - **Styling**: Tailwind CSS + shadcn/ui komponenter
 - **TypeScript**: Fuldt typesikret
 - **State Management**: React hooks
-- **Mock Data**: Simuleret backend data
+- **Data Storage**: Lokal state management (klar til database integration)
 
 ## Kom i Gang
 
@@ -46,14 +46,13 @@ npm run dev
 
 3. Åbn [http://localhost:3000](http://localhost:3000) i din browser
 
-## Demo Data
+## Første Gang Setup
 
-Appen kommer med mock data der inkluderer:
-- 1 underviser (Lars Hansen)
-- 4 elever (Emma, Mikkel, Sofia, Oliver)
-- 2 grupper (7A Matematik, 7A Dansk)
-- 2 opgaver med forskellige felttyper
-- Eksempel besvarelser og hjælp anmodninger
+Applikationen starter helt forfra uden nogen data:
+- Ingen brugere, grupper eller opgaver
+- Ren installation klar til brug
+- Opret din første underviser profil via login
+- Byg dit eget system fra bunden
 
 ## Navigation
 
@@ -64,7 +63,7 @@ Appen kommer med mock data der inkluderer:
 - **Hjælp Anmodninger**: Se og besvar elevernes hjælp anmodninger
 
 ### Elev Interface
-Besøg `/student/1` eller `/student/2` for at se elev interfacet for opgave 1 eller 2.
+Elever kan tilgå deres opgaver via direkte links som deles af underviseren.
 
 ## Funktionalitet Highlights
 
@@ -111,7 +110,7 @@ components/
 ├── student-task-interface.tsx # Elev interface
 lib/
 ├── types.ts                 # TypeScript typer
-├── mock-data.ts            # Mock data og hjælpefunktioner
+├── mock-data.ts            # Data management funktioner
 ├── utils.ts                # Utility funktioner
 ```
 

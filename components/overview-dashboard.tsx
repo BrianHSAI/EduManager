@@ -31,6 +31,35 @@ interface OverviewDashboardProps {
 
 export function OverviewDashboard({ onNavigate }: OverviewDashboardProps) {
   const currentUser = getCurrentUser();
+  
+  // Handle case when no user exists (empty data)
+  if (!currentUser) {
+    return (
+      <div className="space-y-6 p-6">
+        <div className="text-center py-12">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Velkommen til EduManager</h1>
+          <p className="text-gray-600 mb-8">
+            Kom i gang ved at oprette din første gruppe og opgave
+          </p>
+          <div className="flex justify-center space-x-4">
+            <Button 
+              onClick={() => onNavigate('groups')}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              + Opret Gruppe
+            </Button>
+            <Button 
+              onClick={() => onNavigate('tasks')}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              + Opret Opgave
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const groups = getGroupsByTeacher(currentUser.id);
   const totalStudents = groups.reduce((acc, group) => acc + group.students.length, 0);
   const totalTasks = mockTasks.length;
@@ -53,7 +82,7 @@ export function OverviewDashboard({ onNavigate }: OverviewDashboardProps) {
   const stats = [
     {
       title: 'Aktive Grupper',
-      value: 2,
+      value: groups.length,
       icon: Users,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
@@ -62,7 +91,7 @@ export function OverviewDashboard({ onNavigate }: OverviewDashboardProps) {
     },
     {
       title: 'Samlede Elever',
-      value: 7,
+      value: totalStudents,
       icon: Users,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
@@ -71,7 +100,7 @@ export function OverviewDashboard({ onNavigate }: OverviewDashboardProps) {
     },
     {
       title: 'Aktive Opgaver',
-      value: 3,
+      value: totalTasks,
       icon: FileText,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
@@ -80,7 +109,7 @@ export function OverviewDashboard({ onNavigate }: OverviewDashboardProps) {
     },
     {
       title: 'Hjælp Anmodninger',
-      value: 1,
+      value: helpRequests,
       icon: HelpCircle,
       color: 'text-red-600',
       bgColor: 'bg-red-50',
@@ -89,74 +118,32 @@ export function OverviewDashboard({ onNavigate }: OverviewDashboardProps) {
     }
   ];
 
-  // Recent activity data matching the image
-  const recentActivity = [
-    {
-      id: 'SL',
-      name: 'Sofia Larsen',
-      subject: 'Grundlæggende Addition',
-      status: 'I gang',
-      statusColor: 'bg-blue-500'
-    },
-    {
-      id: 'MA',
-      name: 'Mikkel Andersen',
-      subject: 'Grundlæggende Addition',
-      status: 'Hjælp',
-      statusColor: 'bg-red-500'
-    },
-    {
-      id: 'EN',
-      name: 'Emma Nielsen',
-      subject: 'Kreativ Skrivning',
-      status: 'I gang',
-      statusColor: 'bg-blue-500'
-    },
-    {
-      id: 'EN',
-      name: 'Emma Nielsen',
-      subject: 'Grundlæggende Addition',
-      status: 'Færdig',
-      statusColor: 'bg-blue-500'
-    }
-  ];
+  // Recent activity - empty when no data
+  const recentActivity: any[] = [];
 
-  // Task status data matching the image
-  const taskStatus = [
-    {
-      name: 'Grundlæggende Addition',
-      completed: 1,
-      total: 4,
-      progress: 25
-    },
-    {
-      name: 'Kreativ Skrivning',
-      completed: 0,
-      total: 3,
-      progress: 0
-    },
-    {
-      name: 'Individuel Matematik Øvelse',
-      completed: 0,
-      total: 2,
-      progress: 0
-    }
-  ];
+  // Task status - empty when no data
+  const taskStatus: any[] = [];
 
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Velkommen tilbage, Lars Hansen</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Velkommen tilbage, {currentUser.name}</h1>
           <p className="text-gray-600 mt-1">
             Her er et overblik over dine klasser og opgaver
           </p>
         </div>
         <div className="flex space-x-3">
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+          <Button 
+            onClick={() => onNavigate('groups')}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
             + Opret Gruppe
           </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+          <Button 
+            onClick={() => onNavigate('tasks')}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
             + Opret Opgave
           </Button>
         </div>
@@ -198,31 +185,38 @@ export function OverviewDashboard({ onNavigate }: OverviewDashboardProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recentActivity.map((activity, index) => (
-              <div key={index} className="flex items-center space-x-4">
-                <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-medium text-gray-700">{activity.id}</span>
+            {recentActivity.length > 0 ? (
+              recentActivity.map((activity, index) => (
+                <div key={index} className="flex items-center space-x-4">
+                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-medium text-gray-700">{activity.id}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {activity.name}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {activity.subject}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge 
+                      className={`${activity.statusColor} text-white border-0`}
+                    >
+                      {activity.status}
+                    </Badge>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <Eye className="h-4 w-4 text-gray-400" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {activity.name}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">
-                    {activity.subject}
-                  </p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Badge 
-                    className={`${activity.statusColor} text-white border-0`}
-                  >
-                    {activity.status}
-                  </Badge>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <Eye className="h-4 w-4 text-gray-400" />
-                  </Button>
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">Ingen aktivitet endnu</p>
+                <p className="text-sm text-gray-400 mt-1">Aktivitet vil vises når elever begynder at arbejde på opgaver</p>
               </div>
-            ))}
+            )}
           </CardContent>
         </Card>
 
@@ -235,54 +229,58 @@ export function OverviewDashboard({ onNavigate }: OverviewDashboardProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {taskStatus.map((task, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{task.name}</p>
-                    <p className="text-xs text-gray-500">
-                      {task.completed} af {task.total} elever færdige
-                    </p>
+            {taskStatus.length > 0 ? (
+              taskStatus.map((task, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{task.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {task.completed} af {task.total} elever færdige
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="text-gray-600 border-gray-300">
+                      {task.progress}%
+                    </Badge>
                   </div>
-                  <Badge variant="outline" className="text-gray-600 border-gray-300">
-                    {task.progress}%
-                  </Badge>
+                  <Progress value={task.progress} className="h-2" />
                 </div>
-                <Progress value={task.progress} className="h-2" />
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">Ingen opgaver endnu</p>
+                <p className="text-sm text-gray-400 mt-1">Opret din første opgave for at se fremskridt</p>
               </div>
-            ))}
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Help Requests */}
-      <Card className="border-red-200 bg-red-50">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center space-x-2 text-red-800">
-            <AlertCircle className="h-5 w-5" />
-            <span>Elever der har brug for hjælp</span>
-          </CardTitle>
-          <CardDescription className="text-red-700">
-            1 elever har anmodet om hjælp
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-red-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                <span className="text-sm font-medium text-gray-700">MA</span>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">Mikkel Andersen</p>
-                <p className="text-xs text-gray-500">Grundlæggende Addition</p>
-              </div>
+      {/* Help Requests - only show if there are help requests */}
+      {helpRequests > 0 && (
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center space-x-2 text-red-800">
+              <AlertCircle className="h-5 w-5" />
+              <span>Elever der har brug for hjælp</span>
+            </CardTitle>
+            <CardDescription className="text-red-700">
+              {helpRequests} elever har anmodet om hjælp
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-4">
+              <p className="text-gray-600 mb-4">Se alle hjælp anmodninger</p>
+              <Button 
+                onClick={() => onNavigate('help-requests')}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Gå til Hjælp Anmodninger
+              </Button>
             </div>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-              Hjælp Elev
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

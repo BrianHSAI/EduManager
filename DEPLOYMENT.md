@@ -65,10 +65,10 @@ Når applikationen er deployed:
 
 For produktion, husk at:
 
-- Konfigurer rigtige miljøvariabler
 - Aktivér HTTPS (automatisk på Vercel/Netlify)
-- Implementer rigtig autentificering
+- Implementer rigtig autentificering når database tilføjes
 - Konfigurer CORS korrekt
+- Tilføj miljøvariabler hvis nødvendigt
 
 ## 📊 Overvågning
 
