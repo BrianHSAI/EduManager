@@ -72,21 +72,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password,
     })
 
-    if (error) return { error }
+    if (error) {
+      console.error('Signup error:', error)
+      return { error }
+    }
 
-    // Create user profile in our users table
+    // Create user profile in our users table using the database function
     if (data.user) {
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert([{
-          id: data.user.id,
-          email: email,
-          name: userData.name,
-          role: userData.role
-        }])
+      const { error: profileError } = await supabase.rpc('create_user_profile', {
+        user_id: data.user.id,
+        user_email: email,
+        user_name: userData.name,
+        user_role: userData.role
+      })
 
       if (profileError) {
         console.error('Error creating user profile:', profileError)
+        // If profile creation fails, we should clean up the auth user
+        await supabase.auth.signOut()
         return { error: profileError }
       }
     }

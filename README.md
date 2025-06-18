@@ -115,6 +115,40 @@ lib/
 ├── utils.ts                # Utility funktioner
 ```
 
+## Deployment til Browseren
+
+Applikationen er allerede bygget til at køre i browseren. For at gøre den tilgængelig online uden installation:
+
+### Vercel Deployment (Anbefalet)
+
+1. Gå til [vercel.com](https://vercel.com) og opret en konto
+2. Klik "New Project" og importer dette repository
+3. Vercel vil automatisk detektere Next.js og bygge applikationen
+4. Din app vil være tilgængelig på en URL som `https://dit-projekt-navn.vercel.app`
+
+### Netlify Deployment
+
+1. Gå til [netlify.com](https://netlify.com) og opret en konto
+2. Drag og drop `.next` mappen til Netlify Dashboard
+3. Eller forbind dit Git repository for automatisk deployment
+
+### Andre Muligheder
+
+- **GitHub Pages**: For statisk hosting
+- **Railway**: For fuld-stack deployment
+- **Heroku**: For cloud hosting
+
+### Lokal Produktion
+
+For at teste produktions-versionen lokalt:
+
+```bash
+npm run build
+npm run start
+```
+
+Applikationen vil være tilgængelig på [http://localhost:3000](http://localhost:3000)
+
 ## Bidrag
 
 Dette er en demo applikation. For produktionsklare features, kontakt udvikleren.

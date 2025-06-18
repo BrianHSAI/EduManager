@@ -79,13 +79,27 @@ export default function LoginPage() {
       });
       
       if (error) {
-        setError('Der opstod en fejl ved oprettelse af konto. Prøv igen.');
+        console.error('Signup error:', error);
+        
+        // Provide more specific error messages
+        if (error.message?.includes('User already registered')) {
+          setError('En bruger med denne email eksisterer allerede.');
+        } else if (error.message?.includes('Invalid email')) {
+          setError('Ugyldig email adresse.');
+        } else if (error.message?.includes('Password should be at least')) {
+          setError('Adgangskoden skal være mindst 6 tegn lang.');
+        } else if (error.message?.includes('duplicate key value')) {
+          setError('En bruger med denne email eksisterer allerede.');
+        } else {
+          setError(`Der opstod en fejl ved oprettelse af konto: ${error.message || 'Prøv igen.'}`);
+        }
         return;
       }
 
       // The auth provider will handle redirecting based on user role
     } catch (err) {
-      setError('Der opstod en fejl ved oprettelse af konto. Prøv igen.');
+      console.error('Signup catch error:', err);
+      setError('Der opstod en uventet fejl ved oprettelse af konto. Prøv igen.');
     } finally {
       setIsLoading(false);
     }
