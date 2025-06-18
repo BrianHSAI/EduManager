@@ -121,9 +121,15 @@ Applikationen er allerede bygget til at køre i browseren. For at gøre den tilg
 ### Vercel Deployment (Anbefalet)
 
 1. Gå til [vercel.com](https://vercel.com) og opret en konto
-2. Klik "New Project" og importer dette repository
-3. Vercel vil automatisk detektere Next.js og bygge applikationen
-4. Din app vil være tilgængelig på en URL som `https://dit-projekt-navn.vercel.app`
+2. **VIGTIGT**: Konfigurer miljøvariabler før deployment:
+   - Gå til Project Settings → Environment Variables
+   - Tilføj `NEXT_PUBLIC_SUPABASE_URL` og `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - Værdier findes i din Supabase dashboard under Settings → API
+3. Klik "New Project" og importer dette repository
+4. Vercel vil automatisk detektere Next.js og bygge applikationen
+5. Din app vil være tilgængelig på en URL som `https://dit-projekt-navn.vercel.app`
+
+**Note**: Applikationen er konfigureret til at fungere uden Supabase miljøvariabler og vil bruge mock data som fallback.
 
 ### Netlify Deployment
 

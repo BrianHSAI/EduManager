@@ -1,8 +1,14 @@
-import { supabase } from './supabase'
+import { supabase, isSupabaseConfigured } from './supabase'
 import { User, Group, Task, TaskSubmission, TaskField } from './types'
+import { getCurrentUser as getMockCurrentUser } from './mock-data'
 
 // User functions
 export async function getCurrentUser(): Promise<User | null> {
+  if (!isSupabaseConfigured()) {
+    // Use mock data when Supabase is not configured
+    return getMockCurrentUser()
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 

@@ -2,9 +2,10 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { getCurrentUser } from '@/lib/database'
 import { User as AppUser } from '@/lib/types'
+import { addUser } from '@/lib/mock-data'
 
 interface AuthContextType {
   user: AppUser | null
@@ -23,82 +24,135 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSupabaseUser(session?.user ?? null)
-      if (session?.user) {
-        getCurrentUser().then(setUser)
-      }
-      setLoading(false)
-    })
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSupabaseUser(session?.user ?? null)
-      if (session?.user) {
-        const appUser = await getCurrentUser()
-        setUser(appUser)
-        
-        // Redirect based on user role after successful auth
-        if (appUser && window.location.pathname === '/login') {
-          if (appUser.role === 'teacher') {
-            window.location.href = '/teacher'
-          } else {
-            window.location.href = '/student'
-          }
+    if (isSupabaseConfigured()) {
+      // Get initial session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSupabaseUser(session?.user ?? null)
+        if (session?.user) {
+          getCurrentUser().then(setUser)
         }
-      } else {
-        setUser(null)
-      }
-      setLoading(false)
-    })
+        setLoading(false)
+      })
 
-    return () => subscription.unsubscribe()
+      // Listen for auth changes
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange(async (event, session) => {
+        setSupabaseUser(session?.user ?? null)
+        if (session?.user) {
+          const appUser = await getCurrentUser()
+          setUser(appUser)
+          
+          // Redirect based on user role after successful auth
+          if (appUser && window.location.pathname === '/login') {
+            if (appUser.role === 'teacher') {
+              window.location.href = '/teacher'
+            } else {
+              window.location.href = '/student'
+            }
+          }
+        } else {
+          setUser(null)
+        }
+        setLoading(false)
+      })
+
+      return () => subscription.unsubscribe()
+    } else {
+      // Mock mode - no Supabase configured
+      setLoading(false)
+    }
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    return { error }
+    if (isSupabaseConfigured()) {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      return { error }
+    } else {
+      // Mock authentication - always succeed for demo
+      const mockUser: AppUser = {
+        id: '1',
+        name: 'Demo User',
+        email: email,
+        role: 'teacher'
+      }
+      addUser(mockUser)
+      setUser(mockUser)
+      
+      // Redirect based on role
+      if (window.location.pathname === '/login') {
+        window.location.href = '/teacher'
+      }
+      
+      return { error: null }
+    }
   }
 
   const signUp = async (email: string, password: string, userData: { name: string; role: 'teacher' | 'student' }) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
-
-    if (error) {
-      console.error('Signup error:', error)
-      return { error }
-    }
-
-    // Create user profile in our users table using the database function
-    if (data.user) {
-      const { error: profileError } = await supabase.rpc('create_user_profile', {
-        user_id: data.user.id,
-        user_email: email,
-        user_name: userData.name,
-        user_role: userData.role
+    if (isSupabaseConfigured()) {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
       })
 
-      if (profileError) {
-        console.error('Error creating user profile:', profileError)
-        // If profile creation fails, we should clean up the auth user
-        await supabase.auth.signOut()
-        return { error: profileError }
+      if (error) {
+        console.error('Signup error:', error)
+        return { error }
       }
-    }
 
-    return { error: null }
+      // Create user profile in our users table using the database function
+      if (data.user) {
+        const { error: profileError } = await supabase.rpc('create_user_profile', {
+          user_id: data.user.id,
+          user_email: email,
+          user_name: userData.name,
+          user_role: userData.role
+        })
+
+        if (profileError) {
+          console.error('Error creating user profile:', profileError)
+          // If profile creation fails, we should clean up the auth user
+          await supabase.auth.signOut()
+          return { error: profileError }
+        }
+      }
+
+      return { error: null }
+    } else {
+      // Mock authentication - create user in local storage
+      const mockUser: AppUser = {
+        id: Date.now().toString(),
+        name: userData.name,
+        email: email,
+        role: userData.role
+      }
+      addUser(mockUser)
+      setUser(mockUser)
+      
+      // Redirect based on role
+      if (window.location.pathname === '/login') {
+        if (userData.role === 'teacher') {
+          window.location.href = '/teacher'
+        } else {
+          window.location.href = '/student'
+        }
+      }
+      
+      return { error: null }
+    }
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    if (isSupabaseConfigured()) {
+      await supabase.auth.signOut()
+    } else {
+      // Mock sign out
+      setUser(null)
+      window.location.href = '/login'
+    }
   }
 
   const value = {

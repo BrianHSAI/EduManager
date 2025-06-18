@@ -10,7 +10,14 @@ Denne guide viser hvordan du får EduManager applikationen online, så den kan k
    - Gå til [vercel.com](https://vercel.com)
    - Log ind med GitHub, GitLab eller email
 
-2. **Deploy applikationen**
+2. **Konfigurer miljøvariabler (VIGTIGT)**
+   - Før deployment, gå til Project Settings → Environment Variables
+   - Tilføj følgende variabler:
+     - `NEXT_PUBLIC_SUPABASE_URL`: Din Supabase projekt URL
+     - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Din Supabase anonymous key
+   - Disse findes i din Supabase dashboard under Settings → API
+
+3. **Deploy applikationen**
    - Klik "New Project"
    - Importer dette repository (eller upload filerne)
    - Vercel detekterer automatisk Next.js
@@ -82,10 +89,20 @@ Efter deployment kan du:
 
 Hvis deployment fejler:
 
-1. Tjek at `npm run build` virker lokalt
-2. Kontroller miljøvariabler
-3. Se deployment logs på hosting platformen
-4. Kontakt support hvis nødvendigt
+1. **"supabaseUrl is required" fejl**:
+   - Sørg for at miljøvariablerne er konfigureret korrekt i Vercel
+   - Tjek at `NEXT_PUBLIC_SUPABASE_URL` og `NEXT_PUBLIC_SUPABASE_ANON_KEY` er sat
+   - Genstart deployment efter at have tilføjet miljøvariabler
+
+2. **Build fejler lokalt**:
+   - Tjek at `npm run build` virker lokalt
+   - Sørg for at `.env.local` filen indeholder de korrekte værdier
+
+3. **Andre fejl**:
+   - Se deployment logs på hosting platformen
+   - Kontakt support hvis nødvendigt
+
+**Note**: Applikationen er konfigureret til at fungere uden Supabase miljøvariabler og bruger mock data som standard, men for fuld funktionalitet skal miljøvariablerne være konfigureret.
 
 ## 💡 Tips
 
