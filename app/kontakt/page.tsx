@@ -142,6 +142,7 @@ export default function KontaktPage() {
             </CardContent>
           </Card>
         </div>
+
       </div>
     </div>
   );
