@@ -4,6 +4,7 @@ import { Inter as FontSans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/components/auth-provider";
+import { LayoutWrapper } from "@/components/layout-wrapper";
 
 const fontSans = FontSans({
   subsets: ["latin"],
@@ -15,13 +16,14 @@ export default function RootLayout({
   children
 }: Readonly<{
   children: React.ReactNode;
-  breadcrumb: React.ReactNode;
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${fontSans.variable} font-sans antialiased`}>
         <AuthProvider>
-          {children}
+          <LayoutWrapper>
+            {children}
+          </LayoutWrapper>
           <Toaster />
         </AuthProvider>
       </body>

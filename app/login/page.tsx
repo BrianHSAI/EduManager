@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
+import { PasswordResetDialog } from '@/components/password-reset-dialog';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -35,21 +36,28 @@ export default function LoginPage() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Login form submitted with:', signInData.email);
     setIsLoading(true);
     setError('');
 
     try {
-      const { error } = await signIn(signInData.email, signInData.password);
+      console.log('Calling signIn function...');
+      const result = await signIn(signInData.email, signInData.password);
+      console.log('SignIn function returned:', result);
       
-      if (error) {
+      if (result && result.error) {
+        console.error('Login error:', result.error);
         setError('Forkert email eller adgangskode.');
         return;
       }
 
+      console.log('Login successful, waiting for redirect...');
       // The auth provider will handle redirecting based on user role
     } catch (err) {
+      console.error('Login catch error:', err);
       setError('Der opstod en fejl ved login. Prøv igen.');
     } finally {
+      console.log('Setting loading to false');
       setIsLoading(false);
     }
   };
@@ -82,7 +90,11 @@ export default function LoginPage() {
         console.error('Signup error:', error);
         
         // Provide more specific error messages
-        if (error.message?.includes('User already registered')) {
+        if (error.message?.includes('account with this email already exists')) {
+          setError('En bruger med denne email eksisterer allerede. Prøv at logge ind i stedet.');
+        } else if (error.message?.includes('valid email address')) {
+          setError('Indtast venligst en gyldig email adresse.');
+        } else if (error.message?.includes('User already registered')) {
           setError('En bruger med denne email eksisterer allerede.');
         } else if (error.message?.includes('Invalid email')) {
           setError('Ugyldig email adresse.');
@@ -90,6 +102,8 @@ export default function LoginPage() {
           setError('Adgangskoden skal være mindst 6 tegn lang.');
         } else if (error.message?.includes('duplicate key value')) {
           setError('En bruger med denne email eksisterer allerede.');
+        } else if (error.message?.includes('Failed to create user profile')) {
+          setError('Kunne ikke oprette brugerprofil. Prøv igen.');
         } else {
           setError(`Der opstod en fejl ved oprettelse af konto: ${error.message || 'Prøv igen.'}`);
         }
@@ -116,9 +130,9 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Log ind</TabsTrigger>
-              <TabsTrigger value="signup">Opret konto</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 bg-chart-2 text-chart-2">
+              <TabsTrigger value="signin" className="bg-chart-2 text-card-foreground">Log ind</TabsTrigger>
+              <TabsTrigger value="signup" className="bg-chart-2 text-card-foreground">Opret konto</TabsTrigger>
             </TabsList>
 
             {error && (
@@ -128,7 +142,7 @@ export default function LoginPage() {
             )}
 
             <TabsContent value="signin" className="space-y-4">
-              <form onSubmit={handleSignIn} className="space-y-4">
+              <form onSubmit={handleSignIn} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email</Label>
                   <Input
@@ -141,7 +155,17 @@ export default function LoginPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password">Adgangskode</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="signin-password">Adgangskode</Label>
+                    <PasswordResetDialog>
+                      <button
+                        type="button"
+                        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Glemt adgangskode?
+                      </button>
+                    </PasswordResetDialog>
+                  </div>
                   <Input
                     id="signin-password"
                     type="password"
@@ -229,6 +253,36 @@ export default function LoginPage() {
               </form>
             </TabsContent>
           </Tabs>
+          
+          {/* Footer links */}
+          <div className="mt-6 pt-4 border-t text-center">
+            <div className="flex justify-center space-x-6 text-sm text-muted-foreground">
+              <a 
+                href="#" 
+                className="hover:text-foreground transition-colors"
+                onClick={(e) => e.preventDefault()}
+              >
+                GDPR og persondata
+              </a>
+              <a 
+                href="#" 
+                className="hover:text-foreground transition-colors cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  router.push('/kontakt');
+                }}
+              >
+                Kontakt
+              </a>
+              <a 
+                href="#" 
+                className="hover:text-foreground transition-colors"
+                onClick={(e) => e.preventDefault()}
+              >
+                Om HomeworkDelight
+              </a>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

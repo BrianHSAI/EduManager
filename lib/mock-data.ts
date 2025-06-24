@@ -8,7 +8,19 @@ export const mockSubmissions: TaskSubmission[] = [];
 
 // Helper functions that work with empty data
 export const getCurrentUser = (): User | null => {
-  // Return null when no users exist - will need to be handled in components
+  // First check localStorage for current user
+  if (typeof window !== 'undefined') {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        return JSON.parse(userData);
+      } catch (e) {
+        console.error('Error parsing user data from localStorage:', e);
+      }
+    }
+  }
+  
+  // Fallback to first user in mock data if available
   return mockUsers.length > 0 ? mockUsers[0] : null;
 };
 
@@ -53,6 +65,10 @@ export const getAllStudentsByTeacher = (teacherId: string): User[] => {
 // Utility functions for adding data (to be used by components)
 export const addUser = (user: User): void => {
   mockUsers.push(user);
+  // Also store in localStorage for persistence
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('user', JSON.stringify(user));
+  }
 };
 
 export const addGroup = (group: Group): void => {

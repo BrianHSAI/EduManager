@@ -12,9 +12,12 @@ import {
   Edit,
   Clock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
 import { Task, Group } from '@/lib/types';
+import { getSubmissionsByTask } from '@/lib/database/submissions';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 interface TaskStats {
@@ -28,10 +31,46 @@ interface TaskStats {
 interface TaskListItemProps {
   task: Task;
   group?: Group;
-  stats: TaskStats;
+  onDelete?: (taskId: string) => void;
+  onEdit?: (task: Task) => void;
+  onViewSubmissions?: (task: Task) => void;
 }
 
-export function TaskListItem({ task, group, stats }: TaskListItemProps) {
+export function TaskListItem({ task, group, onDelete, onEdit, onViewSubmissions }: TaskListItemProps) {
+  const [stats, setStats] = useState<TaskStats>({ completed: 0, inProgress: 0, needsHelp: 0, notStarted: 0, total: 0 });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        setIsLoading(true);
+        const submissions = await getSubmissionsByTask(task.id);
+        const completed = submissions.filter(s => s.status === 'completed').length;
+        const inProgress = submissions.filter(s => s.status === 'in-progress').length;
+        const needsHelp = submissions.filter(s => s.needsHelp).length;
+        
+        // Calculate total assigned students
+        let totalAssigned = 0;
+        if (task.assignmentType === 'class' && task.groupId) {
+          totalAssigned = group?.students.length || 0;
+        } else {
+          totalAssigned = task.assignedStudents.length;
+        }
+        
+        const notStarted = Math.max(0, totalAssigned - submissions.length);
+        
+        setStats({ completed, inProgress, needsHelp, notStarted, total: totalAssigned });
+      } catch (error) {
+        console.error('Error loading task stats:', error);
+        setStats({ completed: 0, inProgress: 0, needsHelp: 0, notStarted: 0, total: 0 });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadStats();
+  }, [task.id, task.assignmentType, task.groupId, task.assignedStudents.length, group?.students.length]);
+
   const progress = stats.total > 0 ? (stats.completed / stats.total) * 100 : 0;
 
   return (
@@ -61,9 +100,29 @@ export function TaskListItem({ task, group, stats }: TaskListItemProps) {
                 <Eye className="h-4 w-4" />
               </Button>
             </Link>
-            <Button variant="ghost" size="sm">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => onEdit?.(task)}
+              title="Rediger opgave"
+            >
               <Edit className="h-4 w-4" />
             </Button>
+            {onDelete && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => {
+                  if (confirm(`Er du sikker på, at du vil slette opgaven "${task.title}"? Dette kan ikke fortrydes.`)) {
+                    onDelete(task.id);
+                  }
+                }}
+                title="Slet opgave"
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -119,7 +178,11 @@ export function TaskListItem({ task, group, stats }: TaskListItemProps) {
               </div>
             )}
           </div>
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => onViewSubmissions?.(task)}
+          >
             Se Besvarelser
           </Button>
         </div>

@@ -1,51 +1,201 @@
 "use client";
 
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { 
-  Users, 
-  Plus, 
-  Mail, 
-  Calendar,
-  Settings,
-  Trash2,
-  UserPlus
-} from 'lucide-react';
-import { getCurrentUser, getGroupsByTeacher, mockUsers } from '@/lib/mock-data';
+import { Plus, Loader2 } from 'lucide-react';
+import { getGroupsByTeacher, createGroupInvitation, createGroup, updateGroup, removeStudentFromGroup, deleteGroup } from '@/lib/database/groups';
+import { useAuth } from '@/components/auth-provider';
+import { Group, TaskField } from '@/lib/types';
+import { TaskCreationDialog } from './task-creation-dialog';
+import { GroupCreationDialog } from './group-creation-dialog';
+import { GroupSettingsDialog } from './group-settings-dialog';
+import { GroupsList } from './groups-list';
+import { createTask } from '@/lib/database/tasks';
+
+interface NewTaskData {
+  title: string;
+  description: string;
+  subject: string;
+  groupId: string;
+  dueDate: string;
+  assignmentType: 'class' | 'individual';
+}
 
 export function GroupsManagement() {
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const [showAddStudent, setShowAddStudent] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-  const [newGroupName, setNewGroupName] = useState('');
-  const [newGroupDescription, setNewGroupDescription] = useState('');
-  const [studentEmail, setStudentEmail] = useState('');
+  const [showCreateTask, setShowCreateTask] = useState(false);
+  const [showGroupSettings, setShowGroupSettings] = useState(false);
+  const [selectedGroupForTask, setSelectedGroupForTask] = useState<Group | null>(null);
+  const [selectedGroupForSettings, setSelectedGroupForSettings] = useState<Group | null>(null);
 
-  const currentUser = getCurrentUser();
-  const groups = getGroupsByTeacher(currentUser.id);
+  const { user: currentUser } = useAuth();
 
-  const handleCreateGroup = () => {
-    // In a real app, this would make an API call
-    console.log('Creating group:', { name: newGroupName, description: newGroupDescription });
-    setShowCreateGroup(false);
-    setNewGroupName('');
-    setNewGroupDescription('');
+  useEffect(() => {
+    if (currentUser) {
+      loadGroups();
+    }
+  }, [currentUser]);
+
+  const loadGroups = async () => {
+    if (!currentUser) return;
+    
+    try {
+      setIsLoading(true);
+      const groupsData = await getGroupsByTeacher(currentUser.id);
+      setGroups(groupsData);
+    } catch (error) {
+      console.error('Error loading groups:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleAddStudent = () => {
-    // In a real app, this would make an API call
-    console.log('Adding student:', studentEmail, 'to group:', selectedGroup);
-    setShowAddStudent(false);
-    setStudentEmail('');
-    setSelectedGroup(null);
+  const handleCreateGroup = async (name: string, description?: string) => {
+    if (!currentUser) return;
+    
+    const newGroup = await createGroup({
+      name,
+      description,
+      teacherId: currentUser.id
+    }, []);
+    
+    if (newGroup) {
+      await loadGroups();
+    }
   };
+
+  const handleUpdateGroup = async (groupId: string, updates: { name: string; description?: string }) => {
+    try {
+      const success = await updateGroup(groupId, updates);
+      if (success) {
+        console.log('Group updated successfully');
+        await loadGroups();
+      } else {
+        console.error('Failed to update group');
+      }
+    } catch (error) {
+      console.error('Error updating group:', error);
+    }
+  };
+
+  const handleInviteStudent = async (groupId: string, email: string) => {
+    if (!currentUser) return;
+    
+    const invitation = await createGroupInvitation(groupId, email, currentUser.id);
+    
+    if (invitation) {
+      console.log('Invitation sent successfully');
+      await loadGroups();
+    }
+  };
+
+  const handleRemoveStudent = async (groupId: string, studentId: string) => {
+    try {
+      const success = await removeStudentFromGroup(groupId, studentId);
+      if (success) {
+        console.log('Student removed successfully');
+        await loadGroups();
+      } else {
+        console.error('Failed to remove student from group');
+      }
+    } catch (error) {
+      console.error('Error removing student from group:', error);
+    }
+  };
+
+  const handleCreateTask = async (taskData: NewTaskData, fields: TaskField[], selectedStudents: string[]) => {
+    if (!currentUser || !selectedGroupForTask) return;
+    
+    try {
+      const newTask = {
+        title: taskData.title,
+        description: taskData.description,
+        subject: taskData.subject as 'matematik' | 'dansk' | 'engelsk' | 'historie' | 'andet',
+        fields: fields,
+        groupId: selectedGroupForTask.id,
+        teacherId: currentUser.id,
+        assignedStudents: [],
+        assignmentType: 'class' as const,
+        dueDate: taskData.dueDate ? new Date(taskData.dueDate) : undefined
+      };
+
+      const createdTask = await createTask(newTask);
+      
+      if (createdTask) {
+        console.log('Task created successfully for group:', selectedGroupForTask.name, createdTask);
+        setShowCreateTask(false);
+        setSelectedGroupForTask(null);
+        // Refresh the groups to update task counts
+        await loadGroups();
+      }
+    } catch (error) {
+      console.error('Error creating task for group:', error);
+    }
+  };
+
+  const handleCreateTaskForGroup = (group: Group) => {
+    setSelectedGroupForTask(group);
+    setShowCreateTask(true);
+  };
+
+  const handleGroupSettings = (group: Group) => {
+    setSelectedGroupForSettings(group);
+    setShowGroupSettings(true);
+  };
+
+  const handleDeleteGroup = async (group: Group) => {
+    if (!confirm(`Er du sikker på, at du vil slette gruppen "${group.name}"? Dette vil også slette alle opgaver tilknyttet gruppen og kan ikke fortrydes.`)) {
+      return;
+    }
+
+    try {
+      console.log('Attempting to delete group:', group.id, group.name);
+      const success = await deleteGroup(group.id);
+      if (success) {
+        console.log('Group deleted successfully');
+        alert('Gruppen blev slettet succesfuldt!');
+        await loadGroups(); // Reload groups
+      } else {
+        console.error('Failed to delete group');
+        alert('Kunne ikke slette gruppen. Tjek konsollen for detaljer og prøv igen senere.');
+      }
+    } catch (error) {
+      console.error('Error deleting group:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Ukendt fejl';
+      alert(`Der opstod en fejl ved sletning af gruppen: ${errorMessage}`);
+    }
+  };
+
+  // If no current user, show loading or error state
+  if (!currentUser) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-2">Ingen bruger fundet</h1>
+            <p className="text-muted-foreground">
+              Du skal være logget ind for at se dine grupper.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p>Indlæser grupper...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -56,177 +206,46 @@ export function GroupsManagement() {
             Administrer dine klasser og elever
           </p>
         </div>
-        <Dialog open={showCreateGroup} onOpenChange={setShowCreateGroup}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Opret Gruppe
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Opret Ny Gruppe</DialogTitle>
-              <DialogDescription>
-                Opret en ny gruppe til dine elever
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="groupName">Gruppe Navn</Label>
-                <Input
-                  id="groupName"
-                  value={newGroupName}
-                  onChange={(e) => setNewGroupName(e.target.value)}
-                  placeholder="f.eks. 7A Matematik"
-                />
-              </div>
-              <div>
-                <Label htmlFor="groupDescription">Beskrivelse (valgfri)</Label>
-                <Textarea
-                  id="groupDescription"
-                  value={newGroupDescription}
-                  onChange={(e) => setNewGroupDescription(e.target.value)}
-                  placeholder="Beskrivelse af gruppen..."
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowCreateGroup(false)}>
-                  Annuller
-                </Button>
-                <Button onClick={handleCreateGroup} disabled={!newGroupName.trim()}>
-                  Opret Gruppe
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setShowCreateGroup(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Opret Gruppe
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {groups.map((group) => (
-          <Card key={group.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg">{group.name}</CardTitle>
-                </div>
-                <Button variant="ghost" size="sm">
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </div>
-              {group.description && (
-                <CardDescription>{group.description}</CardDescription>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    Oprettet {group.createdAt.toLocaleDateString('da-DK')}
-                  </span>
-                </div>
-                <Badge variant="secondary">
-                  {group.students.length} elever
-                </Badge>
-              </div>
+      <GroupsList
+        groups={groups}
+        onSettings={handleGroupSettings}
+        onCreateTask={handleCreateTaskForGroup}
+        onDelete={handleDeleteGroup}
+        onInviteStudent={handleInviteStudent}
+        onCreateGroup={() => setShowCreateGroup(true)}
+        onRefresh={loadGroups}
+      />
 
-              {/* Students List */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-medium">Elever</h4>
-                  <Dialog open={showAddStudent && selectedGroup === group.id} onOpenChange={(open) => {
-                    setShowAddStudent(open);
-                    if (open) setSelectedGroup(group.id);
-                    else setSelectedGroup(null);
-                  }}>
-                    <DialogTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <UserPlus className="h-3 w-3" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Tilføj Elev</DialogTitle>
-                        <DialogDescription>
-                          Tilføj en elev til gruppen "{group.name}"
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="studentEmail">Elevens Email</Label>
-                          <Input
-                            id="studentEmail"
-                            type="email"
-                            value={studentEmail}
-                            onChange={(e) => setStudentEmail(e.target.value)}
-                            placeholder="elev@skole.dk"
-                          />
-                        </div>
-                        <div className="flex justify-end space-x-2">
-                          <Button variant="outline" onClick={() => setShowAddStudent(false)}>
-                            Annuller
-                          </Button>
-                          <Button onClick={handleAddStudent} disabled={!studentEmail.trim()}>
-                            <Mail className="h-4 w-4 mr-2" />
-                            Send Invitation
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-                
-                <div className="space-y-2 max-h-32 overflow-y-auto">
-                  {group.students.slice(0, 4).map((student) => (
-                    <div key={student.id} className="flex items-center space-x-2">
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={student.avatar} />
-                        <AvatarFallback className="text-xs">
-                          {student.name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm truncate">{student.name}</span>
-                    </div>
-                  ))}
-                  {group.students.length > 4 && (
-                    <div className="text-xs text-muted-foreground">
-                      +{group.students.length - 4} flere elever
-                    </div>
-                  )}
-                </div>
-              </div>
+      {/* Group Creation Dialog */}
+      <GroupCreationDialog
+        isOpen={showCreateGroup}
+        onOpenChange={setShowCreateGroup}
+        onCreateGroup={handleCreateGroup}
+      />
 
-              <div className="flex space-x-2 pt-2">
-                <Button variant="outline" size="sm" className="flex-1">
-                  Se Detaljer
-                </Button>
-                <Button variant="ghost" size="sm">
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Group Settings Dialog */}
+      <GroupSettingsDialog
+        isOpen={showGroupSettings}
+        onOpenChange={setShowGroupSettings}
+        group={selectedGroupForSettings}
+        onUpdateGroup={handleUpdateGroup}
+        onInviteStudent={handleInviteStudent}
+        onRemoveStudent={handleRemoveStudent}
+      />
 
-        {/* Empty State */}
-        {groups.length === 0 && (
-          <Card className="col-span-full">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Users className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">Ingen grupper endnu</h3>
-              <p className="text-muted-foreground text-center mb-4">
-                Opret din første gruppe for at begynde at administrere dine elever
-              </p>
-              <Button onClick={() => setShowCreateGroup(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Opret Din Første Gruppe
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      {/* Task Creation Dialog */}
+      {selectedGroupForTask && showCreateTask && (
+        <TaskCreationDialog
+          groups={[selectedGroupForTask]}
+          onCreateTask={handleCreateTask}
+        />
+      )}
     </div>
   );
 }

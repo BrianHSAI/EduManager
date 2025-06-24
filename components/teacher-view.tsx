@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { OverviewDashboard } from '@/components/overview-dashboard';
 import { GroupsManagement } from '@/components/groups-management';
@@ -9,6 +10,15 @@ import { HelpRequests } from '@/components/help-requests';
 
 export function TeacherView() {
   const [activeTab, setActiveTab] = useState('overview');
+  const router = useRouter();
+
+  const handleTabChange = (tab: string) => {
+    if (tab === 'kontakt') {
+      router.push('/kontakt');
+    } else {
+      setActiveTab(tab);
+    }
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -26,7 +36,7 @@ export function TeacherView() {
   };
 
   return (
-    <DashboardLayout activeTab={activeTab} onTabChange={setActiveTab}>
+    <DashboardLayout activeTab={activeTab} onTabChange={handleTabChange}>
       {renderContent()}
     </DashboardLayout>
   );
