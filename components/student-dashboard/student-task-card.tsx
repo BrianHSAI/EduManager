@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { Task, TaskSubmission } from '@/lib/types';
+import { TaskFolderContextMenu } from '@/components/task-folder-context-menu';
 
 interface StudentTaskCardProps {
   task: Task;
@@ -24,6 +25,7 @@ interface StudentTaskCardProps {
   getStatusBadge: (status: string, needsHelp: boolean, helpMessages: any[]) => any;
   getSubjectColor: (subject: string) => string;
   onViewSubmission: (task: Task, submission: TaskSubmission) => void;
+  onFolderAssigned?: () => void;
 }
 
 export function StudentTaskCard({
@@ -35,7 +37,8 @@ export function StudentTaskCard({
   isOverdue,
   getStatusBadge,
   getSubjectColor,
-  onViewSubmission
+  onViewSubmission,
+  onFolderAssigned
 }: StudentTaskCardProps) {
   // Don't show help request badge for completed tasks
   const showHelpBadge = needsHelp && status !== 'completed';
@@ -72,79 +75,84 @@ export function StudentTaskCard({
   };
 
   return (
-    <Card className={`transition-all hover:shadow-md ${isOverdue && status !== 'completed' ? 'border-red-200' : ''}`}>
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-lg">{task.title}</CardTitle>
-            <CardDescription>{task.description}</CardDescription>
+    <TaskFolderContextMenu 
+      taskId={task.id} 
+      onFolderAssigned={onFolderAssigned}
+    >
+      <Card className={`transition-all hover:shadow-md ${isOverdue && status !== 'completed' ? 'border-red-200' : ''}`}>
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <CardTitle className="text-lg">{task.title}</CardTitle>
+              <CardDescription>{task.description}</CardDescription>
+            </div>
+            <div className="flex flex-col items-end space-y-2">
+              {renderStatusBadge()}
+              <Badge className={getSubjectColor(task.subject)}>
+                {task.subject.charAt(0).toUpperCase() + task.subject.slice(1)}
+              </Badge>
+            </div>
           </div>
-          <div className="flex flex-col items-end space-y-2">
-            {renderStatusBadge()}
-            <Badge className={getSubjectColor(task.subject)}>
-              {task.subject.charAt(0).toUpperCase() + task.subject.slice(1)}
-            </Badge>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {/* Progress */}
-          {status !== 'not-started' && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Fremskridt</span>
-                <span className="text-sm text-muted-foreground">
-                  {Math.round(progress)}%
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Progress */}
+            {status !== 'not-started' && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Fremskridt</span>
+                  <span className="text-sm text-muted-foreground">
+                    {Math.round(progress)}%
+                  </span>
+                </div>
+                <Progress value={progress} className="h-2" />
+              </div>
+            )}
+
+            {/* Due Date */}
+            {task.dueDate && (
+              <div className="flex items-center space-x-2 text-sm">
+                <Calendar className="h-4 w-4" />
+                <span className={isOverdue && status !== 'completed' ? 'text-red-600 font-medium' : 'text-muted-foreground'}>
+                  Afleveringsfrist: {task.dueDate.toLocaleDateString('da-DK')}
+                  {isOverdue && status !== 'completed' && ' (Overskredet)'}
                 </span>
               </div>
-              <Progress value={progress} className="h-2" />
-            </div>
-          )}
-
-          {/* Due Date */}
-          {task.dueDate && (
-            <div className="flex items-center space-x-2 text-sm">
-              <Calendar className="h-4 w-4" />
-              <span className={isOverdue && status !== 'completed' ? 'text-red-600 font-medium' : 'text-muted-foreground'}>
-                Afleveringsfrist: {task.dueDate.toLocaleDateString('da-DK')}
-                {isOverdue && status !== 'completed' && ' (Overskredet)'}
-              </span>
-            </div>
-          )}
-
-          {/* Last Saved */}
-          {submission?.lastSaved && (
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span>
-                Sidst gemt: {submission.lastSaved.toLocaleString('da-DK')}
-              </span>
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="pt-2 space-y-2">
-            <Link href={`/student/${task.id}`}>
-              <Button className="w-full">
-                {status === 'not-started' ? 'Start Opgave' : 
-                 status === 'completed' ? 'Se Opgave' : 'Fortsæt Opgave'}
-              </Button>
-            </Link>
-            
-            {status === 'completed' && submission && (
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => onViewSubmission(task, submission)}
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                Se Besvarelse
-              </Button>
             )}
+
+            {/* Last Saved */}
+            {submission?.lastSaved && (
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span>
+                  Sidst gemt: {submission.lastSaved.toLocaleString('da-DK')}
+                </span>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="pt-2 space-y-2">
+              <Link href={`/student/${task.id}`}>
+                <Button className="w-full">
+                  {status === 'not-started' ? 'Start Opgave' : 
+                   status === 'completed' ? 'Se Opgave' : 'Fortsæt Opgave'}
+                </Button>
+              </Link>
+              
+              {status === 'completed' && submission && (
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => onViewSubmission(task, submission)}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Se Besvarelse
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </TaskFolderContextMenu>
   );
 }

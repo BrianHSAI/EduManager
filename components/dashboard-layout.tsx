@@ -14,6 +14,7 @@ import {
   X,
   HelpCircle,
   Mail,
+  LogOut,
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { LogoutButton } from "@/components/logout-button";
@@ -44,12 +45,12 @@ export function DashboardLayout({
   const helpRequestsCount = mockSubmissions.filter((s) => s.needsHelp).length;
 
   const navigation = [
-    { id: "overview", name: "Oversigt", icon: BookOpen },
+    { id: "overview", name: "Forside", icon: BookOpen },
     { id: "groups", name: "Grupper", icon: Users },
     { id: "tasks", name: "Opgaver", icon: FileText },
     {
       id: "help-requests",
-      name: "Hjælp Anmodninger",
+      name: "Hjælpeanmodninger",
       icon: HelpCircle,
       badge: helpRequestsCount > 0 ? helpRequestsCount : undefined,
     },
@@ -107,15 +108,24 @@ export function DashboardLayout({
                       `}
                     >
                       <Icon className="h-4 w-4 mr-2" />
-                      <span>{item.name}</span>
+
                       {item.badge && (
                         <Badge className="ml-2 bg-red-500 text-white border-0 text-xs px-1.5 py-0.5 min-w-[20px] h-5 flex items-center justify-center">
                           {item.badge}
                         </Badge>
                       )}
+                      <span className="flex items-start justify-start">
+                        {item.name}
+                      </span>
                     </button>
                   );
                 })}
+
+                {/* Log out button */}
+                <LogoutButton
+                  variant="ghost"
+                  className="flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-gray-700 hover:bg-gray-100"
+                />
               </nav>
             </div>
 
@@ -123,15 +133,6 @@ export function DashboardLayout({
             <div className="flex items-center space-x-4">
               {/* Settings Dropdown */}
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-600 hover:text-gray-900"
-                  >
-                    <Settings className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuLabel>Indstillinger</DropdownMenuLabel>
                   <DropdownMenuSeparator />

@@ -12,6 +12,7 @@ interface StudentTaskListProps {
   getSubjectColor: (subject: string) => string;
   isOverdue: (dueDate?: Date) => boolean;
   onViewSubmission: (task: Task, submission: TaskSubmission) => void;
+  onFolderAssigned?: () => void;
 }
 
 export function StudentTaskList({
@@ -22,7 +23,8 @@ export function StudentTaskList({
   getStatusBadge,
   getSubjectColor,
   isOverdue,
-  onViewSubmission
+  onViewSubmission,
+  onFolderAssigned
 }: StudentTaskListProps) {
   if (filteredTasks.length === 0) {
     return (
@@ -53,6 +55,7 @@ export function StudentTaskList({
             getStatusBadge={getStatusBadge}
             getSubjectColor={getSubjectColor}
             onViewSubmission={onViewSubmission}
+            onFolderAssigned={onFolderAssigned}
           />
         );
       })}

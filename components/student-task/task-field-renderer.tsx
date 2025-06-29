@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { NoPasteInput } from '@/components/ui/no-paste-input';
+import { NoPasteTextarea } from '@/components/ui/no-paste-textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -34,7 +35,7 @@ export function TaskFieldRenderer({
       case 'text':
         return (
           <div className="space-y-3">
-            <Input
+            <NoPasteInput
               value={value || ''}
               onChange={(e) => onValueChange(field.id, e.target.value)}
               placeholder={field.placeholder}
@@ -47,7 +48,7 @@ export function TaskFieldRenderer({
       case 'textarea':
         return (
           <div className="space-y-3">
-            <Textarea
+            <NoPasteTextarea
               value={value || ''}
               onChange={(e) => onValueChange(field.id, e.target.value)}
               placeholder={field.placeholder}

@@ -113,3 +113,19 @@ export interface ConnectionRequest {
   student?: User; // Optional populated student data
   teacher?: User; // Optional populated teacher data
 }
+
+export interface TaskFolder {
+  id: string;
+  name: string;
+  studentId: string;
+  color?: string;
+  createdAt: Date;
+}
+
+export interface TaskFolderAssignment {
+  id: string;
+  taskId: string;
+  folderId: string;
+  studentId: string;
+  createdAt: Date;
+}

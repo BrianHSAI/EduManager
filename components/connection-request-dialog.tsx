@@ -186,7 +186,7 @@ export function ConnectionRequestDialog() {
       <DialogTrigger asChild>
         <Button variant="outline" className="flex items-center space-x-2">
           <UserPlus className="h-4 w-4" />
-          <span>Forbind med lærer</span>
+          <span className="">Forbind med lærer</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">

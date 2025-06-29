@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Task, TaskSubmission, HelpMessage } from '@/lib/types';
-import { getTasksByStudent, getSubmissionsByStudent } from '@/lib/database';
+import { Task, TaskSubmission, HelpMessage, TaskFolder, TaskFolderAssignment } from '@/lib/types';
+import { getTasksByStudent, getSubmissionsByStudent, getFoldersByStudent, getTaskFolderAssignments } from '@/lib/database';
 
 export function useStudentDashboard(userId: string | undefined) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [submissions, setSubmissions] = useState<TaskSubmission[]>([]);
+  const [folders, setFolders] = useState<TaskFolder[]>([]);
+  const [folderAssignments, setFolderAssignments] = useState<TaskFolderAssignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,13 +25,17 @@ export function useStudentDashboard(userId: string | undefined) {
     if (!userId) return;
     
     try {
-      const [studentTasks, studentSubmissions] = await Promise.all([
+      const [studentTasks, studentSubmissions, studentFolders, studentFolderAssignments] = await Promise.all([
         getTasksByStudent(userId),
-        getSubmissionsByStudent(userId)
+        getSubmissionsByStudent(userId),
+        getFoldersByStudent(userId),
+        getTaskFolderAssignments(userId)
       ]);
       
       setTasks(studentTasks);
       setSubmissions(studentSubmissions);
+      setFolders(studentFolders);
+      setFolderAssignments(studentFolderAssignments);
     } catch (error) {
       console.error('Error loading student data:', error);
     } finally {
@@ -40,6 +46,11 @@ export function useStudentDashboard(userId: string | undefined) {
   // Create a map of submissions by task ID for easy lookup
   const submissionMap = new Map(
     submissions.map(sub => [sub.taskId, sub])
+  );
+
+  // Create a map of folder assignments by task ID for easy lookup
+  const folderAssignmentMap = new Map(
+    folderAssignments.map(assignment => [assignment.taskId, assignment])
   );
 
   // Filter tasks based on search and filters
@@ -62,6 +73,10 @@ export function useStudentDashboard(userId: string | undefined) {
       matchesStatus = true;
     } else if (statusFilter === 'needs-help') {
       matchesStatus = needsHelp;
+    } else if (statusFilter === 'folder' && showDetailedView) {
+      // Filter by specific folder
+      const assignment = folderAssignmentMap.get(task.id);
+      matchesStatus = assignment?.folderId === showDetailedView;
     } else {
       matchesStatus = status === statusFilter;
     }
@@ -92,6 +107,40 @@ export function useStudentDashboard(userId: string | undefined) {
     return task?.status !== 'completed';
   }).length); // Ensure never negative
   const overallProgress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+  // Calculate folder statistics
+  const getFolderStatistics = (folderId: string) => {
+    const folderTasks = tasks.filter(task => {
+      const assignment = folderAssignmentMap.get(task.id);
+      return assignment?.folderId === folderId && task.status !== 'completed';
+    });
+
+    const totalTasks = folderTasks.length;
+    const completedTasks = folderTasks.filter(task => {
+      const submission = submissionMap.get(task.id);
+      return submission?.status === 'completed';
+    }).length;
+    const inProgressTasks = folderTasks.filter(task => {
+      const submission = submissionMap.get(task.id);
+      return submission?.status === 'in-progress';
+    }).length;
+    const remainingTasks = totalTasks - completedTasks;
+
+    return {
+      totalTasks,
+      completedTasks,
+      inProgressTasks,
+      remainingTasks
+    };
+  };
+
+  // Get tasks for a specific folder
+  const getTasksForFolder = (folderId: string) => {
+    return tasks.filter(task => {
+      const assignment = folderAssignmentMap.get(task.id);
+      return assignment?.folderId === folderId && task.status !== 'completed';
+    });
+  };
 
   const getTaskStatus = (task: Task) => {
     const submission = submissionMap.get(task.id);
@@ -145,8 +194,11 @@ export function useStudentDashboard(userId: string | undefined) {
     // Data
     tasks,
     submissions,
+    folders,
+    folderAssignments,
     filteredTasks,
     submissionMap,
+    folderAssignmentMap,
     isLoading,
     
     // Statistics
@@ -176,6 +228,8 @@ export function useStudentDashboard(userId: string | undefined) {
     getStatusBadge,
     getSubjectColor,
     isOverdue,
+    getFolderStatistics,
+    getTasksForFolder,
     
     // Actions
     loadData
